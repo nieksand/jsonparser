@@ -331,6 +331,83 @@ func EachKey(data []byte, cb func(int, []byte, ValueType, error), paths ...[]str
 	return -1
 }
 
+// Super super ghetto.  Do not use!  I did a quick 'n dirty copy/paste/hack job
+// to test a performance hypothesis.  If you actually use this code for
+// something real, you deserve what you get.
+func WalkMap(data []byte, cb func([]byte, []byte, ValueType, error)) int {
+	var level, i int
+	ln := len(data)
+
+	var stackbuf [unescapeStackBufSize]byte // stack-allocated array for allocation-free unescaping of small strings
+
+	for i < ln {
+		switch data[i] {
+		case '"':
+			i++
+			keyBegin := i
+
+			strEnd, keyEscaped := stringEnd(data[i:])
+			if strEnd == -1 {
+				return -1
+			}
+			i += strEnd
+
+			keyEnd := i - 1
+
+			valueOffset := nextToken(data[i:])
+			if valueOffset == -1 {
+				return -1
+			}
+
+			i += valueOffset
+
+			// if string is a key, and key level match
+			if data[i] == ':' {
+				key := data[keyBegin:keyEnd]
+
+				// for unescape: if there are no escape sequences, this is cheap; if there are, it is a
+				// bit more expensive, but causes no allocations unless len(key) > unescapeStackBufSize
+				var keyUnesc []byte
+				if !keyEscaped {
+					keyUnesc = key
+				} else if ku, err := Unescape(key, stackbuf[:]); err != nil {
+					return -1
+				} else {
+					keyUnesc = ku
+				}
+
+				v, dt, of, e := Get(data[i:])
+				cb(keyUnesc, v, dt, e)
+				if of != -1 {
+					i += of
+				}
+
+				switch data[i] {
+				case '{', '}', '[', '"':
+					i--
+				}
+			} else {
+				i--
+			}
+		case '{':
+			level++
+		case '}':
+			level--
+		case '[':
+			// Do not search for keys inside arrays
+			if arraySkip := blockEnd(data[i:], '[', ']'); arraySkip == -1 {
+				return -1
+			} else {
+				i += arraySkip - 1
+			}
+		}
+
+		i++
+	}
+
+	return -1
+}
+
 // Data types available in valid JSON data.
 type ValueType int
 

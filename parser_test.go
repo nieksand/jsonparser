@@ -2,7 +2,7 @@ package jsonparser
 
 import (
 	"bytes"
-	_ "fmt"
+	 "fmt"
 	"reflect"
 	"testing"
 )
@@ -861,4 +861,20 @@ func TestParseFloat(t *testing.T) {
 			return obtained.(float64) == expected, expected
 		},
 	)
+}
+
+func TestWalkMap(t *testing.T) {
+
+	json := []byte(`{ "potato": "seven", "meowmix": 7, "cowpoop": "2015-02-01 11:11:11" }`)
+
+	WalkMap(json, func(key, value []byte, dtype ValueType, err error) {
+
+		fmt.Println(key)
+
+
+	})
+
+
+
+
 }
