@@ -868,10 +868,7 @@ func TestWalkMap(t *testing.T) {
 	json := []byte(`{ "potato": "seven", "meowmix": 7, "cowpoop": "2015-02-01 11:11:11" }`)
 
 	WalkMap(json, func(key, value []byte, dtype ValueType, err error) {
-
-		fmt.Println(key)
-
-
+		fmt.Printf("->%s<- ->%+v<-\n", string(key), value)
 	})
 
 

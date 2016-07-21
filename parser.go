@@ -376,6 +376,7 @@ func WalkMap(data []byte, cb func([]byte, []byte, ValueType, error)) int {
 					keyUnesc = ku
 				}
 
+				i++
 				v, dt, of, e := Get(data[i:])
 				cb(keyUnesc, v, dt, e)
 				if of != -1 {
